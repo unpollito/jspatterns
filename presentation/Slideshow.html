@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+      <style type="text/css">
+          @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+          @import url(https://fonts.googleapis.com/css?family=Droid+Sans:400,700,400italic);
+          @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+          body {
+              font-family: 'Droid Sans';
+          }
+          h1, h2, h3 {
+              font-family: 'Yanone Kaffeesatz';
+              font-weight: normal;
+              margin-bottom: 0;
+          }
+          .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; line-height: 1em; }
+          .remark-slide-content ul, .remark-slide-content li, .remark-slide-content p {
+              font-size: 22px;
+              line-height: 1.5em;
+              margin: 0;
+          }
+          .remark-slide-content h2 {
+              line-height: 125%;
+          }
+          .remark-slide-content li {
+              margin-bottom: 0.5em;
+          }
+      </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Code Reuse
+
+---
+
+# Pseudoclassical and modern inheritance
+
+These are two examples of object instantiation in Java and JavaScript:
+```javascript
+Person adam = new Person();
+```
+```javascript
+var adam = new Person();
+```
+
+In JavaScript there are no actual classes, just prototypes!
+
+A possible approach to inheritance in JavaScript is to mimic the behaviour of object-oriented languages such as Java. We will call this approach "classical".
+
+---
+
+# inherit
+
+We want to define the inherit function, which is not built-in:
+
+```javascript
+// the parent constructor
+function Parent(name) {
+this.name = name || 'Adam';
+}
+
+// adding functionality to the prototype
+Parent.prototype.say = function () {
+return this.name;
+};
+
+// empty child constructor
+function Child(name) {}
+
+// inheritance magic happens here
+inherit(Child, Parent);
+```
+
+---
+
+# Classical pattern #1 — The Default Pattern
+First approach:
+```javascript
+function inherit(C, P) {
+C.prototype = new P();
+}
+
+var kid = new Child(); //gets functionality from the Parent()
+                      //instance via the prototype
+kid.say(); // "Adam"
+```
+Child doesn't have a "say" method, so the invoker looks up the prototype chain and sees that Parent has a say method, which is then invoked.
+
+---
+
+# Classical pattern #1 — Drawbacks
+
+- Inherits both own properties (added to "this") and prototype properties and methods (such as say()). However, own properties are likely to be specific to one instance and not reusable.
+
+- Doesn’t enable you to pass parameters to the child constructor:
+ ```javascript
+var s = new Child('Seth');
+s.say(); // "Adam"
+```
+---
+
+#Classical pattern #2 — Rent-a-Constructor
+Solves the problem of passing arguments to the parent.
+
+Only inherit properties added to "this" inside the parent constructor (by copy, not by reference).
+ ```javascript
+function Child(a, b, c, d) {
+Parent.apply(this, arguments);
+}
+```
+ apply() takes two parameters: an object to bind to "this" inside the function and an array of arguments.
+
+---
+
+#Multiple inheritance by borrowing constructors
+```javascript
+function Mom() {
+  this.hair = "brown";
+}
+function Dad() {
+  this.eyes = "green";
+}
+function Child() {
+  Mom.apply(this);
+  Dad.apply(this);
+}
+var kid = new Child();
+console.dir(kid);
+// Child
+// eyes: "green"
+// hair: "brown"
+// __proto__: Child
+
+```
+
+---
+
+# Prototype chain
+```javascript
+// the parent constructor
+function Parent(name) {
+this.name = name || 'Adam';
+}
+// adding functionality to the prototype
+Parent.prototype.say = function () {
+return this.name;
+};
+
+// child constructor
+function Child(name) {
+Parent.apply(this, arguments);
+}
+var kid = new Child("Patrick");
+kid.name;
+typeof kid.say;
+```
+
+- What do you think happens when we invoke kid.say()?
+
+--
+
+  - kid.name is defined in Child, but kid.say isn't!
+???
+```javascript
+ // a parent constructor
+function Parent() {
+ this.names = ['Adam', 'West'];
+}
+var parent = new Parent();
+
+// a default child inherits from a parent object
+// via the classical pattern #1
+function DefaultChild() {}
+DefaultChild.prototype = parent;
+var dChild = new DefaultChild();
+// note that above you didn't need `new Parent()`
+//because you already had an instance available
+
+// a static child inherits from parent
+// via the rented constructor pattern
+function RentChild() {
+Parent.call(this);
+}
+var rChild = new RentChild();
+
+alert(parent.hasOwnProperty('names')); // true
+alert(dChild.hasOwnProperty('names')); // false
+alert(rChild.hasOwnProperty('names')); // true
+
+dChild.names.push('Mayor'); //effects parent (reference)
+rChild.names.push('MR');  //modifies own copy
+alert(parent.names.join(', ')); // "Adam, West, Mayor"
+```
+
+---
+# Classical pattern #3 — Rent and Set Prototype
+
+Combines the previous two: we borrow the constructor and set the prototype to a new instance of the constructor.
+```javascript
+function Child(a, c, b, d) {
+Parent.apply(this, arguments);
+}
+Child.prototype = new Parent();
+```
+* The result objects get copies of the parent’s own members and references to the parent’s reusable functionality.
+
+* The child can also pass any arguments to the parent constructor.
+
+* A drawback is that the parent constructor is called twice.
+
+* What happens if both Child and Parent have a name property each?
+
+--
+
+    * Child.name gets looked up first. Only if there was no name property in Child, we would look up in the prototype chain.
+
+---
+# Classical pattern #4 — Share the Prototype
+
+We can set the child's and parent's prototypes to be the same:
+```javascript
+function inherit(C, P) {
+C.prototype = P.prototype;
+}
+```
+* Reusable members should go to the prototype and not "this".
+
+* What limitations does this have?
+
+--
+
+    * If someone modifies the prototype for one object type, all the other associated objects would change as well.
+---
+
+# Classical pattern #5 — A Temporary Constructor (Proxy)
+
+An empty function F() acts as a proxy between the child and the parent to solve the same-prototype problem.
+
+```javascript
+function inherit(C, P) {
+var F = function () {};
+F.prototype = P.prototype;
+C.prototype = new F();
+}
+//child only inherits from prototype
+```
+
+---
+# Enriching classical pattern #5
+##Uber
+Let's add a reference to the parent.
+
+"super" is a reserved word and we should not use "superclass" because there are no classes in JavaScript. Let's use "uber" instead.
+```javascript
+ C.uber = P.prototype;
+```
+
+---
+# Enriching classical pattern #5
+## Resetting the Constructor Pointer
+Let's reset the pointer to the constructor function in case you need it later.
+```javascript
+ C.prototype.constructor = C;
+```
+If you don’t reset the pointer to the constructor, then all children objects will report that Parent() was their constructor.
+
+---
+
+# Complete classical pattern #5
+Last optimization: avoid creating the temporary (proxy) constructor every time you need inheritance:
+```javascript
+var inherit = (function () {
+  var F = function () {};
+  return function (C, P) {
+    F.prototype = P.prototype;
+    C.prototype = new F();
+    C.uber = P.prototype;
+    C.prototype.constructor = C;
+  }
+}());
+```
+---
+
+#Klass - emulating classes
+Klasses provide syntactic sugar for emulating actual classes in JavaScript.
+
+Many different libraries provide different implementations of Klasses, but they all share:
+
+*   Convention on the name of the constructor method
+
+*   Inheritance between classes
+
+*   Access to superclass
+
+---
+
+## First example: creating Man class
+```javascript
+var Man = klass(null, {
+  __construct: function (what) {
+      console.log("Man's constructor");
+      this.name = what;
+  },
+  getName: function () {
+      return this.name;
+  }
+});
+```
+- Two parameters: a parent class to be inherited and the actual implementation of the new class.
+
+- Convention: the class's constructor must be a method called __construct.
+---
+
+## Second example: Superman extends Man
+```javascript
+var SuperMan = klass(Man, {
+  __construct: function (what) {
+      console.log("SuperMan's constructor");
+  },
+  getName: function () {
+      var name = SuperMan.uber.getName.call(this);
+      return "I am " + name;
+  }
+});
+```
+- Inherits from Man.
+
+- getName() is called first by using the uber (super) static property of SuperMan.
+---
+#Klass
+##Results:
+```javascript
+var first = new Man('Adam'); // logs "Man's constructor"
+first.getName(); // "Adam"
+
+var clark = new SuperMan('Clark Kent');  // logs "SuperMan's constructor"
+clark.getName(); // "I am Clark Kent"
+
+clark instanceof Man; // true
+clark instanceof SuperMan; // true
+```
+---
+
+#Klass: implementation
+The klass() implementation has three interesting and distinct parts:
+--
+
+##new constructor
+
+A Child() constructor function is created and will be returned at the end. In this function the __construct method is called if it exists (also the parent's constructor).
+
+```javascript
+var klass = function (Parent, props) {
+    var Child, F, i;
+    // 1. new constructor
+    Child = function () {
+      if (Child.uber && Child.uber.hasOwnProperty("__construct")) {
+        Child.uber.__construct.apply(this, arguments);
+      }
+      if (Child.prototype.hasOwnProperty("__construct")) {
+        Child.prototype.__construct.apply(this, arguments);
+      }
+    };
+
+```
+
+---
+
+#Klass: implementation
+The klass() implementation has three interesting and distinct parts:
+
+
+##inheritance
+
+It’s simply using the previous classical inheritance’s pattern. Only one new thing: setting the Parent to Object if no Parent was passed to inherit from.
+
+```javascript
+ // 2. inherit
+    Parent = Parent || Object;
+    F = function () {};
+    F.prototype = Parent.prototype;
+    Child.prototype = new F();
+    Child.uber = Parent.prototype;
+    Child.prototype.constructor = Child;
+```
+---
+
+#Klass: implementation
+The klass() implementation has three interesting and distinct parts:
+
+
+## add implementation methods
+
+Loops through all the implementation methods and fields and adds them to the prototype of Child.
+
+```javascript
+    // 3. add implementation methods
+    for (i in props) {
+       if (props.hasOwnProperty(i)) {
+          Child.prototype[i] = props[i];
+       }
+    }
+    // return the "class"
+    return Child;
+}
+```
+---
+
+# A remark about new
+
+```javascript
+    function Person(name) {
+        this.name = name;
+    }
+    var john = new Person('John');
+    var lars = Person('Lars');
+```
+- What is the difference between John and Lars?
+
+- In other words: what happens if we forget to use "new"?
+
+--
+
+    - Lars would be undefined and "name" would be bound to the global object!
+
+--
+
+- Here is a possible workaround:
+```javascript
+function Person(name) {
+    if (!(this instanceof Person))
+    {
+        return new Person(name);
+    }
+    this.name = name;
+}
+```
+
+---
+
+# Talking about classes
+
+--
+
+-   ##We have showed that JavaScript is so flexible that it can emulate a "classical" OO language.
+
+--
+
+-   ##But do we actually want to emulate a language or make the most of its natural capabilities?
+
+---
+
+class: center, middle
+
+# Modern Patterns
+
+---
+
+# Prototypal Inheritance
+
+-    no classes involved, here objects inherit from other objects.
+-    goal is creating a second object that gets functionality from a first one
+-    we want an 'object()' function able to do so:
+
+```javascript
+var parent = {    // object to inherit from
+  name: "Papa"
+};
+var child = object(parent); // the new object
+alert(child.name); // "Papa"
+```
+---
+## The object(o) function:
+Very similar to the Classical Pattern #5 (Proxy).
+```javascript
+function object(o) {
+  function F() {}
+  F.prototype = o;
+  return new F();
+}
+```
+---
+#With/Without own properties
+We can decide weather or not letting the child object inherit own properties from the parent
+-  kid will inherit the name property from Person because a new Person() is passed to object()
+-  kid2 will only inherit properties added to the prototype
+
+```javascript
+// parent constructor
+function Person() {
+  this.name = "Adam"; // an "own" property
+}
+Person.prototype.getName = function () {  // a property added to the prototype
+  return this.name;
+};
+
+var papa = new Person(); // create a new person
+var kid = object(papa); // inherit
+// test that both the own property and the prototype property were inherited
+console.log(kid.getName()); // "Adam"
+
+var kid2 = object(Person.prototype);
+console.log(typeof kid2.getName); // "function", because it was in the prototype
+console.log(typeof kid2.name); // "undefined", because only the prototype was inherited
+```
+
+---
+## Object.create()
+Prototypal inheritance is part of the language through this method (ECMAScript 5). Object.create() also accepts an object as extra parameter. All the properties of the extra object will be added to the new child:
+```javascript
+var child = Object.create(parent, {
+  age: { value: 2 } // ECMA5 descriptor
+});
+child.hasOwnProperty("age"); // true
+```
+---
+
+# Inheritance by copying properties: mix-ins
+
+- What if we just copy properties from all the parents? 
+
+```javascript
+function mix() {
+    var arg, prop, child = {};
+    for (arg = 0; arg < arguments.length; arg += 1) {
+        for (prop in arguments[arg]) {
+            if (arguments[arg].hasOwnProperty(prop)) {
+                child[prop] = arguments[arg][prop];
+            }
+        }
+    }
+    return child;
+}
+```
+Remark: this implementation features just a shallow copy! Deep copying requires a bit more code, but it's not difficult. ;)
+---
+
+#Borrowing Methods
+Sometimes you might like to reuse just some methods from an object rather than building an inheritance with the  object.
+This is possible with the borrowing methods pattern which uses the function methods call() and apply().
+
+-   call and apply only differ for the way parameters are passed to the method to invoke:
+
+```javascript
+// call() example
+anotherobj.doStuff.call(myobj, param1, p2, p3);
+// apply() example
+anotherobj.doStuff.apply(myobj, [param1, p2, p3]);
+```
+-   We pass  my object and any parameters, and the borrowed method binds your object as its own @'this'.
+-   myobject pretends to be the other object to benefit from the method you like.
+---
+#Borrow and Bind
+-   When using call()/apply() or simple assignment to borrow a method it's best to have the value of 'this' bound to an object predetermined in advance
+
+```javascript
+var one = {
+    name: "object",
+    say: function(greet) {
+        return greet + ", " + this.name;
+    }
+};
+// test
+one.say('hi'); // "hi, object"
+var two = {
+    name: "another object"
+};
+one.say.apply(two, ['hello']); // "hello, another object"
+```
+
+-    "this" inside say() pointed to two and this.name was therefore “another object”.
+
+---
+#Binding "this"
+-  If we don't bind "this", we can get unexpected results.
+
+```javascript
+// assigning to a variable
+var say = one.say;
+say('hoho'); // "hoho, undefined"
+```
+--
+```javascript
+// passing as a callback
+var yetanother = {
+    name: "Yet another object",
+    method: function(callback) {
+        return callback('Hola');
+    }
+};
+yetanother.method(one.say);
+```
+- What does the last call print?
+--
+
+    - It prints "Hola, undefined"!
+
+-   In both of these cases, "this" inside say() was pointing to the global object.
+---
+
+#bind(object, method)
+To fix an object to a method:
+```javascript 
+function bind(o, m) {
+    return function() {
+        return m.apply(o, [].slice.call(arguments));
+    };
+}
+```
+-   The returned function has access to o and m via a closure, therefore it can access them after bind() returns
+-   They'll always point to the original object and method. 
+
+```javascript 
+var twosay = bind(two, one.say); 
+twosay('yo'); // "yo, another object"
+```
+-    'this' points to 'two' and not the global object
+
+---
+
+# Function.prototype.bind()
+ECMAScript 5 adds a method bind() to Function.prototype  
+Can use it on the go like 'apply()'
+```javascript 
+var newFunc = obj.someFunc.bind(myobj, 1, 2, 3);
+```
+Binds together someFunc() and myobj and also prefills the first three arguments that someFunc() expects.
+
+---
+
+# Functional pattern
+
+```javascript
+var constructor = function (spec, my) {
+    var that, other private instance variables;
+    my = my || {};
+
+    // Add shared variables and functions to my
+
+    that = a new object;
+
+    // Add privileged methods to that
+
+    return that;
+};
+```
+
+- spec is an object which contains all the parameters the constructor needs.
+
+- my contains private variables needed for the constructors in the inheritance chain. This is not always needed!
+
+---
+
+# Functional pattern example
+
+```javascript
+var student = function (spec) {
+    var that = {};
+    that.getName = function() {
+        return spec.name;
+    }
+    return that;
+};
+
+var tumStudent = function (spec) {
+    var that = student(spec);
+    that.getFreeTime = function() {
+        throw new Error("A TUM student does not have free time");
+    }
+    return that;
+};
+
+var ahmed = tumStudent({name: "Ahmed"});
+```
+---
+
+# Functional pattern
+
+- The functional pattern offers lots of power while writing little code.
+
+- It enforces attribute privacy in a simple manner.
+
+- It does not require to use "new".
+
+- However, accessing the parent's methods might require writing extra code.
+
+---
+
+# New in ES6
+
+```javascript
+class SkinnedMesh extends THREE.Mesh {
+  constructor(geometry, materials) {
+    super(geometry, materials);
+
+    this.idMatrix = SkinnedMesh.defaultMatrix();
+    this.bones = [];
+    this.boneMatrices = [];
+    //...
+  }
+  update(camera) {
+    //...
+    super.update();
+  }
+  static defaultMatrix() {
+    return new THREE.Matrix4();
+  }
+}
+```
+- This is not available (yet), but you can still write ES6 and compile it to ES5 with https://babeljs.io/.
+
+- Of course, having actual classes would fix many of the issues we've mentioned... ;)
+
+---
+
+# Final remarks
+-   There are any options available to solve inheritance in JavaScript.
+
+-   Some libraries have their own solutions.
+
+-   Furthermore, it's rare to need complex inheritance chains in JavaScript.
+--
+
+###But the main point is:
+
+-   In static, strongly typed languages, inheritance might be the only way to reuse code.
+
+-   In JavaScript, many simpler and more elegant ways allow to reuse only specific parts of code.
+
+---
+
+class: center, middle
+
+# Questions?
+
+    </textarea>
+    <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
+    </script>
+    <script src="remark.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
