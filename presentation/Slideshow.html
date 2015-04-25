@@ -464,9 +464,9 @@ class: center, middle
 
 # Prototypal Inheritance
 
--    no classes involved, here objects inherit from other objects.
--    goal is creating a second object that gets functionality from a first one
--    we want an 'object()' function able to do so:
+-    No classes involved; objects inherit from other objects.
+-    The goal is to create a second object that gets functionality from a first one.
+-    We want an "object()" function which can do this:
 
 ```javascript
 var parent = {    // object to inherit from
@@ -487,27 +487,23 @@ function object(o) {
 ```
 ---
 #With/Without own properties
-We can decide weather or not letting the child object inherit own properties from the parent
--  kid will inherit the name property from Person because a new Person() is passed to object()
--  kid2 will only inherit properties added to the prototype
+We can decide whether or not to let the child object inherit own properties from the parent.
 
 ```javascript
-// parent constructor
 function Person() {
-  this.name = "Adam"; // an "own" property
+  this.name = "Adam";
 }
-Person.prototype.getName = function () {  // a property added to the prototype
+Person.prototype.getName = function () {
   return this.name;
 };
 
-var papa = new Person(); // create a new person
-var kid = object(papa); // inherit
-// test that both the own property and the prototype property were inherited
+var papa = new Person();
+var kid = object(papa);
 console.log(kid.getName()); // "Adam"
 
 var kid2 = object(Person.prototype);
-console.log(typeof kid2.getName); // "function", because it was in the prototype
-console.log(typeof kid2.name); // "undefined", because only the prototype was inherited
+console.log(typeof kid2.getName); // "function"
+console.log(typeof kid2.name); // "undefined"
 ```
 
 ---
@@ -543,18 +539,14 @@ Remark: this implementation features just a shallow copy! Deep copying requires 
 
 #Borrowing Methods
 Sometimes you might like to reuse just some methods from an object rather than building an inheritance with the  object.
-This is possible with the borrowing methods pattern which uses the function methods call() and apply().
-
--   call and apply only differ for the way parameters are passed to the method to invoke:
+This is possible with the borrowing methods pattern, which uses the function methods call() and apply().
 
 ```javascript
-// call() example
+// These two do just the same thing
 anotherobj.doStuff.call(myobj, param1, p2, p3);
-// apply() example
 anotherobj.doStuff.apply(myobj, [param1, p2, p3]);
 ```
--   We pass  my object and any parameters, and the borrowed method binds your object as its own @'this'.
--   myobject pretends to be the other object to benefit from the method you like.
+-   We pass myobj and any parameters, and the borrowed method binds your object as its own "this".
 ---
 #Borrow and Bind
 -   When using call()/apply() or simple assignment to borrow a method it's best to have the value of 'this' bound to an object predetermined in advance
@@ -620,7 +612,7 @@ function bind(o, m) {
 var twosay = bind(two, one.say); 
 twosay('yo'); // "yo, another object"
 ```
--    'this' points to 'two' and not the global object
+-    "this" points to "two" and not the global object.
 
 ---
 
