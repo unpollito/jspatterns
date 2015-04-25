@@ -3,6 +3,91 @@
  * Docs & Licensing: http://arshaw.com/xdate/
  */
 
+function xDate(spec) {
+	var that = {};
+
+	// Auxiliary functions
+	function coerceToUTC(date) {
+		return new Date(UTC(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate(),
+			date.getHours(),
+			date.getMinutes(),
+			date.getSeconds(),
+			date.getMilliseconds()
+		));
+	}
+	function coerceToLocal(date) {
+		return new Date(
+			date.getUTCFullYear(),
+			date.getUTCMonth(),
+			date.getUTCDate(),
+			date.getUTCHours(),
+			date.getUTCMinutes(),
+			date.getUTCSeconds(),
+			date.getUTCMilliseconds()
+		);
+	}
+	function parseISO(str, utcMode) {
+		var m = str.match(/^(\d{4})(-(\d{2})(-(\d{2})([T ](\d{2}):(\d{2})(:(\d{2})(\.(\d+))?)?(Z|(([-+])(\d{2})(:?(\d{2}))?))?)?)?)?$/);
+		if (m) {
+			var d = new Date(UTC(
+				m[1],
+				m[3] ? m[3] - 1 : 0,
+				m[5] || 1,
+				m[7] || 0,
+				m[8] || 0,
+				m[10] || 0,
+				m[12] ? Number('0.' + m[12]) * 1000 : 0
+			));
+			if (m[13]) { // has gmt offset or Z
+				if (m[14]) { // has gmt offset
+					d.setUTCMinutes(
+						d.getUTCMinutes() +
+						(m[15] == '-' ? 1 : -1) * (Number(m[16]) * 60 + (m[18] ? Number(m[18]) : 0))
+					);
+				}
+			}else{ // no specified timezone
+				if (!utcMode) {
+					d = coerceToLocal(d);
+				}
+			}
+			return d;
+		}
+	}
+	var UTC = Date.UTC;
+
+	// Actual implementation
+	var utcMode = spec.utcMode === true;
+	if (spec.date)
+	{
+		that = new Date(spec.date);
+	}
+	else if (spec.year) {
+		var fields = ['month', 'day', 'hours', 'minutes', 'seconds', 'milliseconds'];
+		var args = [spec.year];
+		for (var i in fields)
+		{
+			if (typeof(spec[fields[i]]) === 'undefined')
+			{
+				break;
+			}
+			args.push(spec[fields[i]]);
+		}
+		that = new Date(UTC.apply(Date, args));
+		if (!utcMode) {
+			that = coerceToLocal(that);
+		}
+	}
+	else if (spec.datestring) {
+		that = parseISO(spec.datestring, utcMode);
+	}
+
+	return that;
+}
+
+
 /*
  * Internal Architecture
  * ---------------------

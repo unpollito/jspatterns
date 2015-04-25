@@ -10,6 +10,9 @@
 Nothing to see here - turn on the console!
 
 <script>
+    var mydate = xDate({year: 2015, month: 3, day: 22, hours: 11, minutes: 2,
+        seconds: 12, milliseconds: 666});
+    console.log(mydate);
     var verify_fields = function(fields, expected_values, function_names, verbose)
     {
         for (var i in fields)
@@ -29,7 +32,7 @@ Nothing to see here - turn on the console!
     };
 
     // I hate how everything else is one-indexed but month is zero-indexed!
-    var mydate = new XDate(2015, 3, 22, 11, 2, 12, 666);
+    //var mydate = new XDate(2015, 3, 22, 11, 2, 12, 666);
     console.log("Testing getters");
     var fields = ["Year", "Month", "Day", "Hour", "Minute", "Seconds", "Milliseconds",
         "Weekday", "Timestamp", "Timestamp"];
@@ -45,7 +48,7 @@ Nothing to see here - turn on the console!
     expected_values[7] = 5;
     verify_fields(fields, expected_values, function_names, false);
 
-    console.log("Testing addYears (positive)");
+    /*console.log("Testing addYears (positive)");
     mydate.addYears(3);
     expected_values[0] = 2019;
     expected_values[7] = 1;
@@ -71,7 +74,7 @@ Nothing to see here - turn on the console!
     console.log("Testing date parsing");
     mydate = new XDate("2015-04-22T11:02:12");
     expected_values[6] = 0; // milliseconds
-    verify_fields(fields, expected_values, function_names, false);
+    verify_fields(fields, expected_values, function_names, false);*/
 </script>
 </body>
 </html>
