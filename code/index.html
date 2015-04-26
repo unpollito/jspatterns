@@ -10,8 +10,16 @@
 Nothing to see here - turn on the console!
 
 <script>
-    var mydate = xDate({year: 2015, month: 3, day: 22, hours: 11, minutes: 2,
-        seconds: 12, milliseconds: 666});
+    var mydate;
+    if (xDate)
+    {
+        // I hate how everything else is one-indexed but month is zero-indexed!
+        mydate = xDate({year: 2015, month: 3, day: 22, hours: 11, minutes: 2,
+            seconds: 12, milliseconds: 666});
+    } else
+    {
+        mydate = new XDate(2015, 3, 22, 11, 2, 12, 666);
+    }
     var verify_fields = function(fields, expected_values, function_names, verbose)
     {
         for (var i = 0; i < fields.length; i++)
@@ -30,35 +38,36 @@ Nothing to see here - turn on the console!
         }
     };
 
-    // I hate how everything else is one-indexed but month is zero-indexed!
-    //var mydate = new XDate(2015, 3, 22, 11, 2, 12, 666);
     console.log("Testing getters");
     var fields = ["Year", "Month", "Day", "Hour", "Minute", "Seconds", "Milliseconds",
         "Weekday", "Timestamp", "Timestamp"];
     var expected_values = [2015, 3, 22, 11, 2, 12, 666, 3];
     var function_names = ["getFullYear", "getMonth", "getDate", "getHours", "getMinutes",
         "getSeconds", "getMilliseconds", "getDay", "getTime", "valueOf"];
-    verify_fields(fields, expected_values, function_names);
+    verify_fields(fields, expected_values, function_names, false);
 
-    console.log("\nTesting setFullYear");
+    console.log("");
+    console.log("Testing setFullYear");
     mydate.setFullYear(2016);
     expected_values[0] = 2016;
     expected_values[7] = 5;
     verify_fields(fields, expected_values, function_names, false);
 
-    /*console.log("Testing addYears (positive)");
+    console.log("");
+    console.log("Testing addYears (positive)");
     mydate.addYears(3);
     expected_values[0] = 2019;
     expected_values[7] = 1;
     verify_fields(fields, expected_values, function_names, false);
 
+    console.log("");
     console.log("Testing addYears (negative)");
     mydate.addYears(-4);
     expected_values[0] = 2015;
     expected_values[7] = 3;
     verify_fields(fields, expected_values, function_names, false);
 
-    var mydate2 = new XDate(2016, 3, 22, 11, 2, 12, 666);
+    /*var mydate2 = new XDate(2016, 3, 22, 11, 2, 12, 666);
     console.log("Testing diffYears and diffMilliseconds");
     if (mydate.diffYears(mydate2) != 1)
     {
@@ -67,12 +76,12 @@ Nothing to see here - turn on the console!
     if (mydate.diffMilliseconds(mydate2) != 31622400000)
     {
         throw new Error("Mismatch in diffMilliseconds");
-    }
+    }*/
 
     console.log("Testing date parsing");
     mydate = new XDate("2015-04-22T11:02:12");
     expected_values[6] = 0; // milliseconds
-    verify_fields(fields, expected_values, function_names, false);*/
+    verify_fields(fields, expected_values, function_names, false);
 </script>
 </body>
 </html>

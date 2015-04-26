@@ -89,6 +89,15 @@ function xDate(spec) {
 		'Months',       // 1
 		'Days'          // 2
 	];
+	var unitsWithin = [
+		12,   // months in year
+		31,   // days in month (sort of)
+		24,   // hours in day
+		60,   // minutes in hour
+		60,   // seconds in minute
+		1000, // milliseconds in second
+		1     //
+	];
 
 	// Actual implementation
 	var utcMode = spec.utcMode === true;
@@ -153,6 +162,39 @@ function xDate(spec) {
 			that.setMonth(month);
 		}
 		return that;
+	};
+
+	// Adders
+	function add(xdate, fieldIndex, delta, preventOverflow) {
+		delta = Number(delta);
+		var intDelta = Math.floor(delta);
+		xdate['set' + methodSubjects[fieldIndex]](
+			xdate['get' + methodSubjects[fieldIndex]]() + intDelta,
+			preventOverflow || false
+		);
+		if (intDelta != delta && fieldIndex < MILLISECONDS) {
+			add(xdate, fieldIndex+1, (delta-intDelta)*unitsWithin[fieldIndex], preventOverflow);
+		}
+	}
+
+	for (var i = 0; i < methodSubjects.length; i++)
+	{
+		if (i <= MILLISECONDS)
+		{
+			(function(i)
+			{
+				var singular = methodSubjects[i];
+				var plural   = subjectPlurals[i] || singular;
+				that['add' + plural] = function(delta, preventOverflow) {
+					add(this, i, delta, preventOverflow);
+					return this;
+				};
+			})(i);
+		}
+	}
+
+	that.addWeeks = function(delta) {
+		return that.addDays(Number(delta) * 7);
 	};
 
 	return that;
