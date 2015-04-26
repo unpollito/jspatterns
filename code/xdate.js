@@ -3,21 +3,23 @@
  * Docs & Licensing: http://arshaw.com/xdate/
  */
 
+Function.prototype.method = function (name, func) {
+	this.prototype[name] = func;
+	return this;
+};
+
+Object.method('superior', function (name) {
+	var that = this,
+		method = that[name];
+	return function ( ) {
+		return method.apply(that, arguments);
+	};
+});
+
 function xDate(spec) {
 	var that = {};
 
 	// Auxiliary functions
-	function coerceToUTC(date) {
-		return new Date(UTC(
-			date.getFullYear(),
-			date.getMonth(),
-			date.getDate(),
-			date.getHours(),
-			date.getMinutes(),
-			date.getSeconds(),
-			date.getMilliseconds()
-		));
-	}
 	function coerceToLocal(date) {
 		return new Date(
 			date.getUTCFullYear(),
@@ -56,7 +58,37 @@ function xDate(spec) {
 			return d;
 		}
 	}
+	function getDaysInMonth(year, month) {
+		return 32 - new Date(UTC(year, month, 32)).getUTCDate();
+	}
 	var UTC = Date.UTC;
+	var FULLYEAR     = 0;
+	var MONTH        = 1;
+	var DATE         = 2;
+	var HOURS        = 3;
+	var MINUTES      = 4;
+	var SECONDS      = 5;
+	var MILLISECONDS = 6;
+	var DAY          = 7;
+	var YEAR         = 8;
+	var WEEK         = 9;
+	var DAY_MS = 86400000;
+	var methodSubjects = [
+		'FullYear',     // 0
+		'Month',        // 1
+		'Date',         // 2
+		'Hours',        // 3
+		'Minutes',      // 4
+		'Seconds',      // 5
+		'Milliseconds', // 6
+		'Day',          // 7
+		'Year'          // 8
+	];
+	var subjectPlurals = [
+		'Years',        // 0
+		'Months',       // 1
+		'Days'          // 2
+	];
 
 	// Actual implementation
 	var utcMode = spec.utcMode === true;
@@ -83,6 +115,45 @@ function xDate(spec) {
 	else if (spec.datestring) {
 		that = parseISO(spec.datestring, utcMode);
 	}
+
+	// Each setter returns "that" to allow for chaining
+	for (var i = 0; i < methodSubjects.length; i++)
+	{
+		var field = methodSubjects[i];
+		var setter_name = 'set' + field;
+		var sup = that.superior(setter_name);
+		that[setter_name] = function(value)
+		{
+			sup(value);
+			return that;
+		}
+	}
+
+	// setFullYear and setMonth accept an optional preventOverflow parameter
+	var setFullYear = that.superior('setFullYear');
+	that.setFullYear = function(fullYear, preventOverflow)
+	{
+		var preventOverflow = preventOverflow === true;
+		var expectedMonth = that.getMonth();
+		setFullYear(fullYear);
+		if (preventOverflow && that.getMonth() != expectedMonth) {
+			that.setMonth(expectedMonth);
+			that.setDate(getDaysInMonth(fullYear, expectedMonth));
+		}
+		return that;
+	};
+
+	var setMonth = that.superior('setMonth');
+	that.setMonth = function(month, preventOverflow)
+	{
+		var preventOverflow = preventOverflow === true;
+		setMonth(month);
+		if (preventOverflow && that.getMonth() != month) {
+			that.setDate(getDaysInMonth(that.getYear(), month));
+			that.setMonth(month);
+		}
+		return that;
+	};
 
 	return that;
 }
