@@ -46,28 +46,26 @@ Nothing to see here - turn on the console!
         "getSeconds", "getMilliseconds", "getDay", "getTime", "valueOf"];
     verify_fields(fields, expected_values, function_names, false);
 
-    console.log("");
     console.log("Testing setFullYear");
     mydate.setFullYear(2016);
     expected_values[0] = 2016;
     expected_values[7] = 5;
     verify_fields(fields, expected_values, function_names, false);
 
-    console.log("");
     console.log("Testing addYears (positive)");
     mydate.addYears(3);
     expected_values[0] = 2019;
     expected_values[7] = 1;
     verify_fields(fields, expected_values, function_names, false);
 
-    console.log("");
     console.log("Testing addYears (negative)");
     mydate.addYears(-4);
     expected_values[0] = 2015;
     expected_values[7] = 3;
     verify_fields(fields, expected_values, function_names, false);
 
-    /*var mydate2 = new XDate(2016, 3, 22, 11, 2, 12, 666);
+    var mydate2 = xDate({year: 2016, month: 3, day: 22, hours: 11, minutes: 2,
+        seconds: 12, milliseconds: 666});
     console.log("Testing diffYears and diffMilliseconds");
     if (mydate.diffYears(mydate2) != 1)
     {
@@ -76,7 +74,7 @@ Nothing to see here - turn on the console!
     if (mydate.diffMilliseconds(mydate2) != 31622400000)
     {
         throw new Error("Mismatch in diffMilliseconds");
-    }*/
+    }
 
     console.log("Testing date parsing");
     mydate = new XDate("2015-04-22T11:02:12");
