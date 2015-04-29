@@ -345,71 +345,8 @@ clark.getName(); // "I am Clark Kent"
 clark instanceof Man; // true
 clark instanceof SuperMan; // true
 ```
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
 --
-
-##new constructor
-
-A Child() constructor function is created and will be returned at the end. In this function the __construct method is called if it exists (also the parent's constructor).
-
-```javascript
-var klass = function (Parent, props) {
-    var Child, F, i;
-    // 1. new constructor
-    Child = function () {
-      if (Child.uber && Child.uber.hasOwnProperty("__construct")) {
-        Child.uber.__construct.apply(this, arguments);
-      }
-      if (Child.prototype.hasOwnProperty("__construct")) {
-        Child.prototype.__construct.apply(this, arguments);
-      }
-    };
-
-```
-
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
-
-
-##inheritance
-
-It’s simply using the previous classical inheritance’s pattern. Only one new thing: setting the Parent to Object if no Parent was passed to inherit from.
-
-```javascript
- // 2. inherit
-    Parent = Parent || Object;
-    F = function () {};
-    F.prototype = Parent.prototype;
-    Child.prototype = new F();
-    Child.uber = Parent.prototype;
-    Child.prototype.constructor = Child;
-```
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
-
-
-## add implementation methods
-
-Loops through all the implementation methods and fields and adds them to the prototype of Child.
-
-```javascript
-    // 3. add implementation methods
-    for (i in props) {
-       if (props.hasOwnProperty(i)) {
-          Child.prototype[i] = props[i];
-       }
-    }
-    // return the "class"
-    return Child;
-}
-```
+- An example implementation can be found in Stoyanov's _JavaScript Patterns_.
 ---
 
 # A remark about new
@@ -746,7 +683,7 @@ as a mistake."
  *
  */
 ```
-- TL,DR: instead of extending from Date, they are using aggregation and redefining all the methods!
+- TL,DR: instead of extending from Date, they are using delegation and redefining all the methods!
 ---
 # The main issue with XDate
 
