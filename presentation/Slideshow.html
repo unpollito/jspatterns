@@ -770,7 +770,7 @@ class XDate extends Date{
   //this function was added to the prototype
   this.splice = Array.prototype.splice;
 
-    var len = args.length;
+  var len = args.length;
   if (isBoolean(args[len-1])) {
     this.utcMode = args[--len];
     args = slice(args, 0, len);
