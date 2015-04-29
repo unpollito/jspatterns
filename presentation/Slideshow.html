@@ -62,12 +62,12 @@ We want to define the inherit function, which is not built-in:
 ```javascript
 // the parent constructor
 function Parent(name) {
-this.name = name || 'Adam';
+    this.name = name || 'Adam';
 }
 
 // adding functionality to the prototype
 Parent.prototype.say = function () {
-return this.name;
+    return this.name;
 };
 
 // empty child constructor
@@ -79,11 +79,11 @@ inherit(Child, Parent);
 
 ---
 
-# Classical pattern #1 — The Default Pattern
+# The default pattern
 First approach:
 ```javascript
 function inherit(C, P) {
-C.prototype = new P();
+    C.prototype = new P();
 }
 
 var kid = new Child(); //gets functionality from the Parent()
@@ -94,7 +94,7 @@ Child doesn't have a "say" method, so the invoker looks up the prototype chain a
 
 ---
 
-# Classical pattern #1 — Drawbacks
+# Drawbacks
 
 - Inherits both own properties (added to "this") and prototype properties and methods (such as say()). However, own properties are likely to be specific to one instance and not reusable.
 
@@ -105,20 +105,20 @@ s.say(); // "Adam"
 ```
 ---
 
-#Classical pattern #2 — Rent-a-Constructor
+# Rent-a-Constructor
 Solves the problem of passing arguments to the parent.
 
 Only inherit properties added to "this" inside the parent constructor (by copy, not by reference).
  ```javascript
 function Child(a, b, c, d) {
-Parent.apply(this, arguments);
+    Parent.apply(this, arguments);
 }
 ```
  apply() takes two parameters: an object to bind to "this" inside the function and an array of arguments.
 
 ---
 
-#Multiple inheritance by borrowing constructors
+# Multiple inheritance by borrowing constructors
 ```javascript
 function Mom() {
   this.hair = "brown";
@@ -199,12 +199,12 @@ alert(parent.names.join(', ')); // "Adam, West, Mayor"
 ```
 
 ---
-# Classical pattern #3 — Rent and Set Prototype
+# Rent and set prototype
 
 Combines the previous two: we borrow the constructor and set the prototype to a new instance of the constructor.
 ```javascript
 function Child(a, c, b, d) {
-Parent.apply(this, arguments);
+    Parent.apply(this, arguments);
 }
 Child.prototype = new Parent();
 ```
@@ -221,12 +221,12 @@ Child.prototype = new Parent();
     * Child.name gets looked up first. Only if there was no name property in Child, we would look up in the prototype chain.
 
 ---
-# Classical pattern #4 — Share the Prototype
+# Share the prototype
 
 We can set the child's and parent's prototypes to be the same:
 ```javascript
 function inherit(C, P) {
-C.prototype = P.prototype;
+    C.prototype = P.prototype;
 }
 ```
 * Reusable members should go to the prototype and not "this".
@@ -238,21 +238,21 @@ C.prototype = P.prototype;
     * If someone modifies the prototype for one object type, all the other associated objects would change as well.
 ---
 
-# Classical pattern #5 — A Temporary Constructor (Proxy)
+# A temporary constructor (Proxy)
 
 An empty function F() acts as a proxy between the child and the parent to solve the same-prototype problem.
 
 ```javascript
 function inherit(C, P) {
 var F = function () {};
-F.prototype = P.prototype;
-C.prototype = new F();
+    F.prototype = P.prototype;
+    C.prototype = new F();
 }
 //child only inherits from prototype
 ```
 
 ---
-# Enriching classical pattern #5
+# Enriching the Proxy pattern
 ##Uber
 Let's add a reference to the parent.
 
@@ -262,8 +262,8 @@ Let's add a reference to the parent.
 ```
 
 ---
-# Enriching classical pattern #5
-## Resetting the Constructor Pointer
+# Enriching the Proxy pattern 
+## Resetting the constructor pointer
 Let's reset the pointer to the constructor function in case you need it later.
 ```javascript
  C.prototype.constructor = C;
@@ -272,7 +272,7 @@ If you don’t reset the pointer to the constructor, then all children objects w
 
 ---
 
-# Complete classical pattern #5
+# Complete Proxy pattern
 Last optimization: avoid creating the temporary (proxy) constructor every time you need inheritance:
 ```javascript
 var inherit = (function () {
@@ -345,71 +345,8 @@ clark.getName(); // "I am Clark Kent"
 clark instanceof Man; // true
 clark instanceof SuperMan; // true
 ```
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
 --
-
-##new constructor
-
-A Child() constructor function is created and will be returned at the end. In this function the __construct method is called if it exists (also the parent's constructor).
-
-```javascript
-var klass = function (Parent, props) {
-    var Child, F, i;
-    // 1. new constructor
-    Child = function () {
-      if (Child.uber && Child.uber.hasOwnProperty("__construct")) {
-        Child.uber.__construct.apply(this, arguments);
-      }
-      if (Child.prototype.hasOwnProperty("__construct")) {
-        Child.prototype.__construct.apply(this, arguments);
-      }
-    };
-
-```
-
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
-
-
-##inheritance
-
-It’s simply using the previous classical inheritance’s pattern. Only one new thing: setting the Parent to Object if no Parent was passed to inherit from.
-
-```javascript
- // 2. inherit
-    Parent = Parent || Object;
-    F = function () {};
-    F.prototype = Parent.prototype;
-    Child.prototype = new F();
-    Child.uber = Parent.prototype;
-    Child.prototype.constructor = Child;
-```
----
-
-#Klass: implementation
-The klass() implementation has three interesting and distinct parts:
-
-
-## add implementation methods
-
-Loops through all the implementation methods and fields and adds them to the prototype of Child.
-
-```javascript
-    // 3. add implementation methods
-    for (i in props) {
-       if (props.hasOwnProperty(i)) {
-          Child.prototype[i] = props[i];
-       }
-    }
-    // return the "class"
-    return Child;
-}
-```
+- An example implementation can be found in Stoyanov's _JavaScript Patterns_.
 ---
 
 # A remark about new
@@ -477,7 +414,7 @@ alert(child.name); // "Papa"
 ```
 ---
 ## The object(o) function:
-Very similar to the Classical Pattern #5 (Proxy).
+Very similar to the Proxy pattern.
 ```javascript
 function object(o) {
   function F() {}
@@ -486,7 +423,7 @@ function object(o) {
 }
 ```
 ---
-#With/Without own properties
+#With/without own properties
 We can decide whether or not to let the child object inherit own properties from the parent.
 
 ```javascript
@@ -680,8 +617,124 @@ var ahmed = tumStudent({name: "Ahmed"});
 
 - It does not require to use "new".
 
-- However, accessing the parent's methods might require writing extra code.
+- It does not care about "this" context.
 
+- However, object instantiation can be slower. (Why?)
+
+---
+
+# Final remark
+> "I have been writing JavaScript for 14 years now, and I have never once found need to use an uber function.
+The super idea is fairly important in the classical pattern, but it appears to be unnecessary in the
+prototypal and functional patterns. I now see my early attempts to support the classical model in JavaScript
+as a mistake."
+
+<div style="text-align: right">(Douglas Crockford)</div>
+--
+
+###The main point is:
+
+-   In static, strongly typed languages, inheritance might be the only way to reuse code.
+
+-   In JavaScript, many simpler and more elegant ways allow to reuse only specific parts of code.
+
+---
+
+# Refactoring
+
+- We will be refactoring XDate, a library which aims to extend the native JavaScript Date.
+- XDate provides a few new operations (e.g. "addYears") and modifies some of the original operations.
+
+---
+
+# The main issue with XDate
+```javascript
+/*
+ * Internal Architecture
+ * ---------------------
+ * An XDate wraps a native Date. The native Date is stored in the '0' property
+ * of the object. UTC-mode is determined by whether the internal native Date's
+ * toString method is set to Date.prototype.toUTCString (see getUTCMode).
+ *
+ */
+```
+- TL,DR: instead of extending from Date, they are using delegation and redefining all the methods!
+---
+# The main issue with XDate
+
+- This leads to:
+
+```javascript
+each(methodSubjects, function(subject, fieldIndex) {
+
+	proto['get' + subject] = function() {
+		return _getField(this[0], getUTCMode(this), fieldIndex);
+	};
+
+	if (fieldIndex != YEAR) { // because there is no getUTCYear
+		proto['getUTC' + subject] = function() {
+			return _getField(this[0], true, fieldIndex);
+		};
+	}
+
+    // same goes for the setters and on and on and on...
+}
+```
+
+---
+# Refactored solution
+```javascript
+function xDate(spec) {
+	var that = {};
+
+	var utcMode = spec.utcMode === true;
+
+	if (spec.date)
+	{
+		that = new Date(spec.date);
+	}
+
+	else if (spec.year) {
+		var fields = ['month', 'day', 'hours', 'minutes', 'seconds', 'milliseconds'];
+		var args = [spec.year];
+		for (var i in fields)
+		{
+			if (typeof(spec[fields[i]]) === 'undefined')
+			{
+				break;
+			}
+			args.push(spec[fields[i]]);
+		}
+		that = new Date(UTC.apply(Date, args));
+		if (!utcMode) {
+			that = coerceToLocal(that);
+		}
+	}
+```
+---
+# Refactored solution
+```javascript
+	else if (spec.datestring) {
+		that = parseISO(spec.datestring, utcMode);
+	}
+
+	// setFullYear accepts an optional preventOverflow parameter
+	var setFullYear = that.superior('setFullYear');
+	that.setFullYear = function(fullYear, preventOverflow)
+	{
+		var preventOverflow = preventOverflow === true;
+		var expectedMonth = that.getMonth();
+		setFullYear(fullYear);
+		if (preventOverflow && that.getMonth() != expectedMonth) {
+			that.setMonth(expectedMonth);
+			that.setDate(getDaysInMonth(fullYear, expectedMonth));
+		}
+		return that;
+	};
+
+	return that;
+}
+```
 ---
 
 # New in ES6
@@ -708,28 +761,72 @@ class SkinnedMesh extends THREE.Mesh {
 - This is not available (yet), but you can still write ES6 and compile it to ES5 with https://babeljs.io/.
 
 - Of course, having actual classes would fix many of the issues we've mentioned... ;)
-
 ---
+#Refactoring in ES6
+```javascript
+class XDate extends Date{
+ constructor(args) {
+ 
+  //this function was added to the prototype
+  this.splice = Array.prototype.splice;
 
-# Final remarks
--   There are any options available to solve inheritance in JavaScript.
+  var len = args.length;
+  if (isBoolean(args[len-1])) {
+    this.utcMode = args[--len];
+    args = slice(args, 0, len);
+  }
+  //empty args
+  if (!len) {
+    this = super();
+  }
+```
+---
+```javascript
 
--   Some libraries have their own solutions.
+  //one argument: it's either a Date, Number, XDate or String
+  else if (len == 1) {
+    var arg = args[0];
+    if (arg instanceof Date || isNumber(arg)) {
+      super(+arg);
+    }
+    else if (arg instanceof XDate) {
+      _clone(arg);
+    }
+    else if (isString(arg)) {
+      parse(arg, utcMode || false, this);
+    }
+  }
+  // Creates a current timestamp with UTC
+  else {
+    super(UTC.apply(Date, args));
+    // if not in UTC mode will change to local
+    if (!utcMode) {
+      this.coerceToLocal();
+    }
+  }
 
--   Furthermore, it's rare to need complex inheritance chains in JavaScript.
---
+  if (isBoolean(this.utcMode)) {
+    this.setUTCMode(utcMode);
+  }
+}
 
-###But the main point is:
+```
 
--   In static, strongly typed languages, inheritance might be the only way to reuse code.
-
--   In JavaScript, many simpler and more elegant ways allow to reuse only specific parts of code.
 
 ---
 
 class: center, middle
 
 # Questions?
+
+---
+# References and further reading
+- Crockford, D. (2008) _JavaScript: The Good Parts_. Sebastopol, CA: O'Reilly Media, Inc.
+- Stofanov, S. (2010) _JavaScript Patterns_. Sebastopol, CA: O'Reilly Media, Inc.
+- Crockford, D. (2008) _Prototypal Inheritance in JavaScript_. Retrieved from http://javascript.crockford.com/prototypal.html.
+- Crockford, D. _Classical Inheritance in JavaScript_. Retrieved from http://www.crockford.com/javascript/inheritance.html.
+- Richard-Foy, J. (2011) _Functional inheritance vs prototypal inheritance_. [Blog post] Retrieved from http://julien.richard-foy.fr/blog/2011/10/30/functional-inheritance-vs-prototypal-inheritance/.
+- Yegge, S. (2006) _Execution in the Kingdom of Nouns_. [Blog post] Retrieved from http://steve-yegge.blogspot.de/2006/03/execution-in-kingdom-of-nouns.html.
 
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
