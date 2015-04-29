@@ -801,12 +801,12 @@ class XDate extends Date{
     super(UTC.apply(Date, args));
     // if not in UTC mode will change to local
     if (!utcMode) {
-      coerceToLocal(this);
+      this.coerceToLocal();
     }
   }
 
   if (isBoolean(this.utcMode)) {
-    setUTCMode(this, this.utcMode);
+    this.setUTCMode(utcMode);
   }
 }
 
