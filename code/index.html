@@ -11,7 +11,7 @@ Nothing to see here - turn on the console!
 
 <script>
     var mydate;
-    if (xDate)
+    if (window.xDate)
     {
         // I hate how everything else is one-indexed but month is zero-indexed!
         mydate = xDate({year: 2015, month: 3, day: 22, hours: 11, minutes: 2,
@@ -64,8 +64,16 @@ Nothing to see here - turn on the console!
     expected_values[7] = 3;
     verify_fields(fields, expected_values, function_names, false);
 
-    var mydate2 = xDate({year: 2016, month: 3, day: 22, hours: 11, minutes: 2,
-        seconds: 12, milliseconds: 666});
+    var mydate2;
+    if (window.xDate)
+    {
+        // I hate how everything else is one-indexed but month is zero-indexed!
+        mydate2 = xDate({year: 2016, month: 3, day: 22, hours: 11, minutes: 2,
+            seconds: 12, milliseconds: 666});
+    } else
+    {
+        mydate2 = new XDate(2016, 3, 22, 11, 2, 12, 666);
+    }
     console.log("Testing diffYears and diffMilliseconds");
     if (mydate.diffYears(mydate2) != 1)
     {
@@ -77,7 +85,13 @@ Nothing to see here - turn on the console!
     }
 
     console.log("Testing date parsing");
-    mydate = new XDate("2015-04-22T11:02:12");
+    if (window.xDate)
+    {
+        mydate = new xDate({datestring: "2015-04-22T11:02:12"});
+    } else
+    {
+        mydate = new XDate("2015-04-22T11:02:12");
+    }
     expected_values[6] = 0; // milliseconds
     verify_fields(fields, expected_values, function_names, false);
 </script>
