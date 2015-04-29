@@ -619,32 +619,7 @@ var ahmed = tumStudent({name: "Ahmed"});
 
 - However, it can be a bit slower. (Why?)
 
----
 
-# New in ES6
-
-```javascript
-class SkinnedMesh extends THREE.Mesh {
-  constructor(geometry, materials) {
-    super(geometry, materials);
-
-    this.idMatrix = SkinnedMesh.defaultMatrix();
-    this.bones = [];
-    this.boneMatrices = [];
-    //...
-  }
-  update(camera) {
-    //...
-    super.update();
-  }
-  static defaultMatrix() {
-    return new THREE.Matrix4();
-  }
-}
-```
-- This is not available (yet), but you can still write ES6 and compile it to ES5 with https://babeljs.io/.
-
-- Of course, having actual classes would fix many of the issues we've mentioned... ;)
 
 ---
 
@@ -760,6 +735,83 @@ function xDate(spec) {
 	return that;
 }
 ```
+---
+
+# New in ES6
+
+```javascript
+class SkinnedMesh extends THREE.Mesh {
+  constructor(geometry, materials) {
+    super(geometry, materials);
+
+    this.idMatrix = SkinnedMesh.defaultMatrix();
+    this.bones = [];
+    this.boneMatrices = [];
+    //...
+  }
+  update(camera) {
+    //...
+    super.update();
+  }
+  static defaultMatrix() {
+    return new THREE.Matrix4();
+  }
+}
+```
+- This is not available (yet), but you can still write ES6 and compile it to ES5 with https://babeljs.io/.
+
+- Of course, having actual classes would fix many of the issues we've mentioned... ;)
+---
+#Refactoring in ES6
+```javascript
+class XDate extends Date{
+ constructor(args) {
+ 
+  //this function was added to the prototype
+  this.splice = Array.prototype.splice;
+
+    var len = args.length;
+  if (isBoolean(args[len-1])) {
+    this.utcMode = args[--len];
+    args = slice(args, 0, len);
+  }
+  //empty args
+  if (!len) {
+    this = super();
+  }
+```
+---
+```javascript
+
+  //one argument: it's either a Date, Number, XDate or String
+  else if (len == 1) {
+    var arg = args[0];
+    if (arg instanceof Date || isNumber(arg)) {
+      super(+arg);
+    }
+    else if (arg instanceof XDate) {
+      _clone(arg);
+    }
+    else if (isString(arg)) {
+      parse(arg, utcMode || false, this);
+    }
+  }
+  // Creates a current timestamp with UTC
+  else {
+    super(UTC.apply(Date, args));
+    // if not in UTC mode will change to local
+    if (!utcMode) {
+      coerceToLocal(this);
+    }
+  }
+
+  if (isBoolean(this.utcMode)) {
+    setUTCMode(this, this.utcMode);
+  }
+}
+
+```
+
 
 ---
 
