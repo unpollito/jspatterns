@@ -53,6 +53,10 @@ In JavaScript there are no actual classes, just prototypes!
 
 A possible approach to inheritance in JavaScript is to mimic the behaviour of object-oriented languages such as Java. We will call this approach "classical".
 
+???
+Similarity in instansiation   
+but JS no classes   
+classical inheritance patterns if try to mimic classic behaviour   
 ---
 
 # inherit
@@ -77,6 +81,11 @@ function Child(name) {}
 inherit(Child, Parent);
 ```
 
+
+
+???
+define inherit function
+
 ---
 
 # The default pattern
@@ -92,6 +101,9 @@ kid.say(); // "Adam"
 ```
 Child doesn't have a "say" method, so the invoker looks up the prototype chain and sees that Parent has a say method, which is then invoked.
 
+???
+say is not in kid but in the prot chain     
+drawbacks: both properties, no parameters to constructor
 ---
 
 # Drawbacks
@@ -103,6 +115,11 @@ Child doesn't have a "say" method, so the invoker looks up the prototype chain a
 var s = new Child('Seth');
 s.say(); // "Adam"
 ```
+
+???
+drawbacks: both properties, no parameters to constructor     
+Rent a constructor
+
 ---
 
 # Rent-a-Constructor
@@ -115,6 +132,9 @@ function Child(a, b, c, d) {
 }
 ```
  apply() takes two parameters: an object to bind to "this" inside the function and an array of arguments.
+
+???
+apply constructor method
 
 ---
 
@@ -138,6 +158,9 @@ console.dir(kid);
 // __proto__: Child
 
 ```
+???
+notice proto set to child
+
 
 ---
 
@@ -161,42 +184,13 @@ kid.name;
 typeof kid.say;
 ```
 
-- What do you think happens when we invoke kid.say()?
+- What do you think happens when we invoke kid.name and kid.say()?
 
 --
 
   - kid.name is defined in Child, but kid.say isn't!
 ???
-```javascript
- // a parent constructor
-function Parent() {
- this.names = ['Adam', 'West'];
-}
-var parent = new Parent();
-
-// a default child inherits from a parent object
-// via the classical pattern #1
-function DefaultChild() {}
-DefaultChild.prototype = parent;
-var dChild = new DefaultChild();
-// note that above you didn't need `new Parent()`
-//because you already had an instance available
-
-// a static child inherits from parent
-// via the rented constructor pattern
-function RentChild() {
-Parent.call(this);
-}
-var rChild = new RentChild();
-
-alert(parent.hasOwnProperty('names')); // true
-alert(dChild.hasOwnProperty('names')); // false
-alert(rChild.hasOwnProperty('names')); // true
-
-dChild.names.push('Mayor'); //effects parent (reference)
-rChild.names.push('MR');  //modifies own copy
-alert(parent.names.join(', ')); // "Adam, West, Mayor"
-```
+ kid.name is defined in Child, but kid.say isn't!
 
 ---
 # Rent and set prototype
@@ -219,6 +213,10 @@ Child.prototype = new Parent();
 --
 
     * Child.name gets looked up first. Only if there was no name property in Child, we would look up in the prototype chain.
+???
+copy of members, reuse through prototype    
+can pass arg     
+constructor called twice    
 
 ---
 # Share the prototype
@@ -236,6 +234,9 @@ function inherit(C, P) {
 --
 
     * If someone modifies the prototype for one object type, all the other associated objects would change as well.
+
+???
+change down the chain affect parent
 ---
 
 # A temporary constructor (Proxy)
@@ -250,7 +251,9 @@ var F = function () {};
 }
 //child only inherits from prototype
 ```
-
+???
+recognized as good solution    
+add uber and reset constructor    
 ---
 # Enriching the Proxy pattern
 ##Uber
@@ -285,6 +288,7 @@ var inherit = (function () {
   }
 }());
 ```
+
 ---
 
 #Klass - emulating classes
@@ -347,6 +351,8 @@ clark instanceof SuperMan; // true
 ```
 --
 - An example implementation can be found in Stoyanov's _JavaScript Patterns_.
+???
+inheritance is solved with proxy
 ---
 
 # A remark about new
@@ -361,7 +367,8 @@ clark instanceof SuperMan; // true
 - What is the difference between John and Lars?
 
 - In other words: what happens if we forget to use "new"?
-
+???
+without new the this is the global obj
 --
 
     - Lars would be undefined and "name" would be bound to the global object!
@@ -667,15 +674,15 @@ as a mistake."
 ```javascript
 each(methodSubjects, function(subject, fieldIndex) {
 
-	proto['get' + subject] = function() {
-		return _getField(this[0], getUTCMode(this), fieldIndex);
-	};
+  proto['get' + subject] = function() {
+    return _getField(this[0], getUTCMode(this), fieldIndex);
+  };
 
-	if (fieldIndex != YEAR) { // because there is no getUTCYear
-		proto['getUTC' + subject] = function() {
-			return _getField(this[0], true, fieldIndex);
-		};
-	}
+  if (fieldIndex != YEAR) { // because there is no getUTCYear
+    proto['getUTC' + subject] = function() {
+      return _getField(this[0], true, fieldIndex);
+    };
+  }
 
     // same goes for the setters and on and on and on...
 }
@@ -685,54 +692,54 @@ each(methodSubjects, function(subject, fieldIndex) {
 # Refactored solution
 ```javascript
 function xDate(spec) {
-	var that = {};
+  var that = {};
 
-	var utcMode = spec.utcMode === true;
+  var utcMode = spec.utcMode === true;
 
-	if (spec.date)
-	{
-		that = new Date(spec.date);
-	}
+  if (spec.date)
+  {
+    that = new Date(spec.date);
+  }
 
-	else if (spec.year) {
-		var fields = ['month', 'day', 'hours', 'minutes', 'seconds', 'milliseconds'];
-		var args = [spec.year];
-		for (var i in fields)
-		{
-			if (typeof(spec[fields[i]]) === 'undefined')
-			{
-				break;
-			}
-			args.push(spec[fields[i]]);
-		}
-		that = new Date(UTC.apply(Date, args));
-		if (!utcMode) {
-			that = coerceToLocal(that);
-		}
-	}
+  else if (spec.year) {
+    var fields = ['month', 'day', 'hours', 'minutes', 'seconds', 'milliseconds'];
+    var args = [spec.year];
+    for (var i in fields)
+    {
+      if (typeof(spec[fields[i]]) === 'undefined')
+      {
+        break;
+      }
+      args.push(spec[fields[i]]);
+    }
+    that = new Date(UTC.apply(Date, args));
+    if (!utcMode) {
+      that = coerceToLocal(that);
+    }
+  }
 ```
 ---
 # Refactored solution
 ```javascript
-	else if (spec.datestring) {
-		that = parseISO(spec.datestring, utcMode);
-	}
+  else if (spec.datestring) {
+    that = parseISO(spec.datestring, utcMode);
+  }
 
-	// setFullYear accepts an optional preventOverflow parameter
-	var setFullYear = that.superior('setFullYear');
-	that.setFullYear = function(fullYear, preventOverflow)
-	{
-		var preventOverflow = preventOverflow === true;
-		var expectedMonth = that.getMonth();
-		setFullYear(fullYear);
-		if (preventOverflow && that.getMonth() != expectedMonth) {
-			that.setMonth(expectedMonth);
-			that.setDate(getDaysInMonth(fullYear, expectedMonth));
-		}
-		return that;
-	};
+  // setFullYear accepts an optional preventOverflow parameter
+  var setFullYear = that.superior('setFullYear');
+  that.setFullYear = function(fullYear, preventOverflow)
+  {
+    var preventOverflow = preventOverflow === true;
+    var expectedMonth = that.getMonth();
+    setFullYear(fullYear);
+    if (preventOverflow && that.getMonth() != expectedMonth) {
+      that.setMonth(expectedMonth);
+      that.setDate(getDaysInMonth(fullYear, expectedMonth));
+    }
+    return that;
+  };
 
-	return that;
+  return that;
 }
 ```
 ---
