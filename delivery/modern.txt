@@ -1,3 +1,50 @@
+Code Reuse Patterns
+By David Martin Gonzalez, Enrico Gigantiello
+
+
+1.	Intro
+
+This document is the written transcript of the seminar Javascript Patterns and Antipatterns held in April 2015 on the subject of Code Reuse Patterns. We will present the two main categories in which these patterns are divided and present the refactoring of some Javascript code which was lacking or making wrong use of these patterns. 
+It is clear to all  JS developers that over the last years this functional object oriented language has tried to provide some syntactical sugar to ‘look like’ classical object oriented languages (classical meaning using classes). The reason for this was probably to encourage developers from other OO languages to use JS. But as we all know JS has no actual classes but only prototypes. 
+For this reason we will in this paper distinguish between patterns using the concept  of class to obtain code reuse (Classical) and the ones using JS’s proper features to obtain the same goal (Modern).
+
+2.	Classical Code Reuse Patterns
+
+Code reuse in classical OO languages is obtained through inheritance: so in the following section we will assume to have a parent object with both own properties and extended prototype functionalities, and a child object which wants to inherit them.
+
+One basical approach to solving this problem is setting the child's prototype as an instance of a new parent object. This way inside the child object we can access all of the parent's functionalities and members just by looking upwards in the prototype chain. This process is transparent to the developer since when we call child.method if the method is not found in the child's properties JS automatically looks for it in the prototype. The problem is that own properties are likely to be specific to one instance and not reusable so having a reference to them in a child instance is not a good code reuse principle in JS. Furthermore this approach doesn’t enable you to pass parameters to the child constructor.
+
+To solve this last issue the "Rent a Constructor" pattern can be used. This solution consists in calling the Function.prototype.apply()  method to use the parent constructor on an instance of the child  while passing an array of arguments to it. We will see later how the apply method can be invoked to reuse any other method of an object. This pattern only gives a copy of the inherited properties to the child so that it can freely modify them. Furthermore it makes multiple inheritance quite easy since the object can easily 'apply' more than one object's constructor. The issue here is that no reference to the parent prototype will be available from the child.
+
+The "Rent And Set Prototype" pattern, beeing the combination of the previous two methods, both applies the parent constructor and sets the child prototype to a new parent object. This way the child will have a copy of the 'own members' of it's parent but can still acess the functionalities set in it's protoype. A minor drawback is that the parent constructor is called twice.
+
+As we previously said among the good principles of code reuse in JS is the idea of placing the reusable parts of code of an object in it’s prototype and not in it’s own properties. Following this idea 'ad litteram' we realize that the child actually only has to have access to it's parent prototype, not to the object itself. We can apply this principle by making the child’s and parent’s prototype to be the same object and this way also avoiding to use the 'new' operator at all.
+Unfortunately this "Share The Prototype" pattern has the huge drawback that any son or grandson down the hierarchy accesses the exact same prototype object as the first parent which means he can modify it and generate unexpected behaviour.
+
+Luckily enough JS gives us a workaround to this problem. We can set the prototype of an empty function to be the same as the parent's and next set the child's prototype to a new instance of the empty function. This pattern is called Temporary Constructor or also Proxy pattern and next is the snippet doing what expressed in the previous sentence:
+function inherit(C, P) {
+var F = function () {};
+    F.prototype = P.prototype;
+    C.prototype = new F();
+}
+This pattern is widely recognized to be a good solution since we personally found it in many of the projects we scanned while looking for code to refactor. Therefore it has been enriched to look even more like a classical object oriented inheritance by adding a 'uber' property (linked to the parent prototype) which is simulating the use of super (obviously super couldn't be used since it's a reserved word). 
+
+One last approach is the use of 'Klass' methods which provides syntactic sugar for emulating actual classes in JavaScript. Many different libraries provide different implementations of Klasses, but they all share three main points. First they obviously have to provide an inheritance mechanism; second they should give access to the superklass; third a convention has to be estabilished to recognize one of the methods defined in the klass as it's constructor. We can associate the result of invoking this function to a var KlassName and then use the new KlassName(params) to create an object. We wont dig into the Klass’s implementation but it might be good to know that the inheritance is obtained with the Proxy pattern shown before. An example implementation can be found in Stoyanov's JavaScript Patterns.
+
+We  finally want to also remark that from ES6 new syntactical sugar will be added to simulate classical inheritance in JS. This version is not available yet but code can be run with the use of libraries like  https://babeljs.io/. Among others is the introduction of very familiar keywords for Classical OO developers such as extends, constructor, super when defining an object. The words are quite self explicatory so we wont go over their functionalities. 
+
+While looking around for projects to refactor we also stepped into a very nice solution to solve the 'forgetting the new' antipattern. Given a generic Person(name) function, when creating an instance of the person it's important to use the 'new' notation since "var john = Person('John')" will be undefined and it's name bound to the global object (we are actually not telling JS we want to use the function as a constructor). A workaround is as simple checking if the this inside the function is an instance of Person. If so we just set the properties else we return new Person(name):
+function Person(name) {
+if (!(this instanceof Person))
+	return new Person(name);
+this.name = name;
+}
+
+Final Consideration
+We have showed once again the extreme flexibility of JS, to the point that it can emulate a differently Object Oriented language. 
+But do we really want to force this dynamic language to copy another language’s syntax and semantics? The next group of patterns will show us the brilliant native ways JS has to solve code reuse problems.
+
+3.		Modern Code Reuse Patterns
 As was previously indicated, we distinguish between two types of patterns: those which try to mimic that of object-oriented design, and the ones that intend to make full use of JavaScript's abilities, which we call "modern". In all these patterns, we simply try to create an object from one or several parent objects.
 
 One of the most relevant and commonly used patterns is called prototypal inheritance. In a nutshell, it basically sets an object's prototype to be another object. This is typically achieved by having an object() function, such that the first parameter to this function is the object we want to inherit from; the function would then return a new object.
@@ -29,3 +76,4 @@ It needs to be said that, due to the considerable size of the XDate library and 
 Extending directly from Date using the functional pattern allowed us to get rid, at the very least, of the definition of all "getUTC" methods. The getters in the refactored version do not work exactly as those in the original project, as we do not observe whether the object is set to UTC, but even if we were to mimic this behaviour, the amount of written code would still be significantly less; we'd only have to call either a get or getUTC function depending on the UTC mode. Something similar happens to the setters, which we have implemented; while the setters' basic functionality is untouched, the ones in XDate return an instance of the object, which can be used for chaining. Although this lead us to implementing manually all setters as well, the amount of code used is again smaller and could have been avoided completely had we decided not to allow chaining.
 
 All in all, it seems clear that the functional pattern allows for much cleaner code. However, it should also be stressed that refactoring a large class' constructor can take a very significant amount of time; on top of that, this particular case also involves modifying public APIs, which can be inappropriate for a reusable library. In particular, our changes involve dropping the need to use the "new" keyword and, most importantly, renaming the constructor from XDate to xDate, so as to indicate that the constructor doesn't need to be invoked with "new".
+
